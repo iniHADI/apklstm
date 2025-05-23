@@ -4,3 +4,8 @@ numpy==2.0.2
 matplotlib==3.9.4
 scikit-learn==1.6.0
 tensorflow==2.18.0
+openpyxl==3.1.2
+markdown-it-py==3.0.0
+mdurl==0.1.2
+pygments==2.19.1
+rich==14.0.0
