@@ -1,3 +1,9 @@
+# Required dependencies:
+# streamlit, numpy, pandas, tensorflow, scikit-learn, matplotlib, openpyxl
+
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # Suppress TensorFlow GPU warnings
+
 import streamlit as st
 import numpy as np
 import pandas as pd
