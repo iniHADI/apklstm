@@ -29,9 +29,10 @@ st.write("Kolom data yang dimuat:", data.columns.tolist())
 date_col = None
 inflation_col = None
 for col in data.columns:
-    if 'date' in col.lower() or 'Periode' in col.lower():
+    col_lower = col.lower()
+    if 'date' in col_lower or 'periode' in col_lower:
         date_col = col
-    if 'inflation' in col.lower() or 'inflasi' in col.lower() or 'Data Inflasi' in col.lower():
+    if 'inflation' in col_lower or 'inflasi' in col_lower or 'data inflasi' in col_lower:
         inflation_col = col
 
 if date_col is None or inflation_col is None:
