@@ -34,6 +34,7 @@ if date_col not in data.columns or inflation_col not in data.columns:
 else:
     data[date_col] = pd.to_datetime(data[date_col])
     data = data[[date_col, inflation_col]]
+    data = data.sort_values(by=date_col, ascending=False)  # Sort descending
     data.set_index(date_col, inplace=True)
     data.columns = ['Inflation']
 
@@ -80,7 +81,7 @@ else:
             current_input = np.append(current_input[:,1:,:], [[[pred]]], axis=1)
 
         predictions = scaler.inverse_transform(np.array(predictions).reshape(-1,1))
-        future_dates = pd.date_range(start=data.index[-1] + pd.DateOffset(months=1), periods=12, freq='M')
+        future_dates = pd.date_range(start=data.index[-1] + pd.offsets.MonthEnd(1) + pd.Timedelta(days=1), periods=12, freq='M')
         pred_df = pd.DataFrame({'Date': future_dates, 'Predicted Inflation': predictions.flatten()})
         pred_df.set_index('Date', inplace=True)
 
