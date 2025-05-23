@@ -8,11 +8,16 @@ import matplotlib.pyplot as plt
 
 st.title("Prediksi Inflasi Bulanan di Indonesia dengan LSTM")
 
-# Generate synthetic monthly inflation data (for demonstration)
-np.random.seed(42)
-dates = pd.date_range(start='2010-01-01', periods=120, freq='M')
-inflation = 2 + 0.1 * np.arange(120) + np.random.normal(0, 0.5, 120)  # synthetic trend + noise
-data = pd.DataFrame({'Date': dates, 'Inflation': inflation})
+# Load inflation data from Excel file
+@st.cache_data
+def load_data():
+    df = pd.read_excel('Data Inflasi.xlsx')
+    return df
+
+data = load_data()
+
+# Assuming the Excel file has columns 'Date' and 'Inflation'
+data['Date'] = pd.to_datetime(data['Date'])
 data.set_index('Date', inplace=True)
 
 st.subheader("Data Inflasi Bulanan")
