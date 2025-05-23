@@ -67,6 +67,3 @@ if st.button("Mulai Training"):
 
 else:
     st.info("Klik tombol 'Mulai Training' untuk melatih model dan melihat prediksi.")
-
-else:
-    st.info("Klik tombol 'Mulai Training' untuk melatih model dan melihat prediksi.")
