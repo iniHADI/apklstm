@@ -25,17 +25,11 @@ data = load_data()
 # Display columns to help user verify
 st.write("Kolom data yang dimuat:", data.columns.tolist())
 
-# Try to find the date and inflation columns automatically
-date_col = None
-inflation_col = None
-for col in data.columns:
-    col_lower = col.lower()
-    if 'date' in col_lower or 'periode' in col_lower:
-        date_col = col
-    if 'inflation' in col_lower or 'inflasi' in col_lower or 'data inflasi' in col_lower:
-        inflation_col = col
+# Directly assign column names as per your data
+date_col = 'Periode'
+inflation_col = 'Data Inflasi'
 
-if date_col is None or inflation_col is None:
+if date_col not in data.columns or inflation_col not in data.columns:
     st.error("Tidak dapat menemukan kolom tanggal atau inflasi dalam data.")
 else:
     data[date_col] = pd.to_datetime(data[date_col])
