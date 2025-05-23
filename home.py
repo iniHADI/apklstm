@@ -8,25 +8,20 @@ import matplotlib.pyplot as plt
 
 st.title("Prediksi Inflasi Bulanan di Indonesia dengan LSTM")
 
-# Load data from Excel
-@st.cache_data
-def load_data():
-    df = pd.read_excel('Data Inflasi.xlsx', engine='openpyxl')
-    df['Tanggal'] = pd.to_datetime(df['Tanggal'])
-    df.set_index('Tanggal', inplace=True)
-    df.rename(columns={'Inflasi': 'Inflation'}, inplace=True)
-    return df
-
-data = load_data()
+# Generate synthetic monthly inflation data (for demonstration)
+np.random.seed(42)
+dates = pd.date_range(start='2010-01-01', periods=120, freq='M')
+inflation = 2 + 0.1 * np.arange(120) + np.random.normal(0, 0.5, 120)  # synthetic trend + noise
+data = pd.DataFrame({'Date': dates, 'Inflation': inflation})
+data.set_index('Date', inplace=True)
 
 st.subheader("Data Inflasi Bulanan")
 st.line_chart(data)
 
-# Normalize data
+# Prepare data for LSTM
 scaler = MinMaxScaler(feature_range=(0, 1))
 inflation_scaled = scaler.fit_transform(data)
 
-# Prepare dataset for LSTM
 def create_dataset(dataset, look_back=3):
     X, Y = [], []
     for i in range(len(dataset) - look_back):
@@ -36,37 +31,42 @@ def create_dataset(dataset, look_back=3):
 
 look_back = 3
 X, y = create_dataset(inflation_scaled, look_back)
-X = np.reshape(X, (X.shape[0], X.shape[1], 1))  # reshape to [samples, time steps, features]
 
-# Build model
+# Reshape input to be [samples, time steps, features]
+X = np.reshape(X, (X.shape[0], X.shape[1], 1))
+
+# Build LSTM model
 model = Sequential()
 model.add(LSTM(50, input_shape=(look_back, 1)))
 model.add(Dense(1))
 model.compile(loss='mean_squared_error', optimizer='adam')
 
+# Train model
 st.subheader("Training Model LSTM")
 if st.button("Mulai Training"):
-    with st.spinner("Training model..."):
+    with st.spinner('Training model...'):
         model.fit(X, y, epochs=20, batch_size=1, verbose=0)
     st.success("Training selesai!")
 
-    # Predict 12 months ahead
+    # Predict future inflation for next 12 months
     last_data = inflation_scaled[-look_back:]
     predictions = []
     current_input = last_data.reshape(1, look_back, 1)
-
     for _ in range(12):
-        pred = model.predict(current_input)[0, 0]
+        pred = model.predict(current_input)[0,0]
         predictions.append(pred)
-        current_input = np.append(current_input[:, 1:, :], [[[pred]]], axis=1)
+        current_input = np.append(current_input[:,1:,:], [[[pred]]], axis=1)
 
-    predictions = scaler.inverse_transform(np.array(predictions).reshape(-1, 1))
+    predictions = scaler.inverse_transform(np.array(predictions).reshape(-1,1))
     future_dates = pd.date_range(start=data.index[-1] + pd.offsets.MonthBegin(), periods=12, freq='M')
-    pred_df = pd.DataFrame({'Tanggal': future_dates, 'Prediksi Inflasi': predictions.flatten()})
-    pred_df.set_index('Tanggal', inplace=True)
+    pred_df = pd.DataFrame({'Date': future_dates, 'Predicted Inflation': predictions.flatten()})
+    pred_df.set_index('Date', inplace=True)
 
-    st.subheader("Prediksi Inflasi 12 Bulan ke Depan")
+    st.subheader("Prediksi Inflasi Bulanan 12 Bulan ke Depan")
     st.line_chart(pred_df)
+
+else:
+    st.info("Klik tombol 'Mulai Training' untuk melatih model dan melihat prediksi.")
 
 else:
     st.info("Klik tombol 'Mulai Training' untuk melatih model dan melihat prediksi.")
