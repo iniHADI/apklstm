@@ -11,9 +11,25 @@ st.title("Prediksi Inflasi Bulanan Indonesia")
 @st.cache_data
 def load_data():
     df = pd.read_excel("Data Inflasi (2).xlsx", engine="openpyxl")
-    df["Tanggal"] = pd.to_datetime(df["Tanggal"])
-    df.set_index("Tanggal", inplace=True)
-    df = df[["Inflasi"]]  # hanya kolom inflasi
+    st.write("🔍 Kolom ditemukan:", df.columns.tolist())  # debug info
+
+    # Deteksi otomatis kolom tanggal dan inflasi
+    tanggal_col = None
+    inflasi_col = None
+    for col in df.columns:
+        if "tanggal" in col.lower() or "date" in col.lower():
+            tanggal_col = col
+        if "inflasi" in col.lower() or "inflation" in col.lower():
+            inflasi_col = col
+
+    if tanggal_col is None or inflasi_col is None:
+        st.error("❌ Kolom 'Tanggal' atau 'Inflasi' tidak ditemukan.")
+        st.stop()
+
+    df[tanggal_col] = pd.to_datetime(df[tanggal_col])
+    df.set_index(tanggal_col, inplace=True)
+    df = df[[inflasi_col]]
+    df.columns = ['Inflasi']  # ubah jadi nama standar
     return df
 
 data = load_data()
@@ -59,7 +75,7 @@ if st.button("Mulai Training"):
 
     # 6. Output
     st.subheader("Prediksi Bulan Berikutnya")
-    st.write(f"Prediksi inflasi bulan depan: **{next_inflation:.2f}%**")
-    st.write(f"Tingkat inflasi diperkirakan akan **{arah}** dibandingkan bulan terakhir (**{last_real:.2f}%**).")
+    st.write(f"📈 Prediksi inflasi bulan depan: **{next_inflation:.2f}%**")
+    st.write(f"Perkiraan inflasi akan **{arah}** dibanding bulan terakhir (**{last_real:.2f}%**).")
 else:
     st.info("Klik tombol 'Mulai Training' untuk melatih model dan melihat prediksi.")
