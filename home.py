@@ -1,91 +1,65 @@
-# Required dependencies:
-# streamlit, numpy, pandas, tensorflow, scikit-learn, matplotlib, openpyxl
-
-import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # Suppress TensorFlow GPU warnings
-
 import streamlit as st
-import numpy as np
 import pandas as pd
+import numpy as np
+from sklearn.preprocessing import MinMaxScaler
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense
-from sklearn.preprocessing import MinMaxScaler
-import matplotlib.pyplot as plt
 
-st.title("Prediksi Inflasi Bulanan di Indonesia dengan LSTM")
+st.title("Prediksi Inflasi Bulanan Indonesia")
 
-# Load inflation data from Excel file
+# 1. Load Data
 @st.cache_data
 def load_data():
-    df = pd.read_excel('Data Inflasi.xlsx')
+    df = pd.read_excel("Data Inflasi (2).xlsx", engine="openpyxl")
+    df["Tanggal"] = pd.to_datetime(df["Tanggal"])
+    df.set_index("Tanggal", inplace=True)
+    df = df[["Inflasi"]]  # hanya kolom inflasi
     return df
 
 data = load_data()
 
-# Display columns to help user verify
-st.write("Kolom data yang dimuat:", data.columns.tolist())
+st.subheader("Data Inflasi (2003–2025)")
+st.line_chart(data)
 
-# Directly assign column names as per your data
-date_col = 'Periode'
-inflation_col = 'Data Inflasi'
+# 2. Preprocessing
+scaler = MinMaxScaler()
+scaled_data = scaler.fit_transform(data)
 
-if date_col not in data.columns or inflation_col not in data.columns:
-    st.error("Tidak dapat menemukan kolom tanggal atau inflasi dalam data.")
+def create_dataset(dataset, look_back=3):
+    X, y = [], []
+    for i in range(len(dataset) - look_back):
+        X.append(dataset[i:i+look_back, 0])
+        y.append(dataset[i+look_back, 0])
+    return np.array(X), np.array(y)
+
+look_back = 3
+X, y = create_dataset(scaled_data, look_back)
+X = X.reshape(X.shape[0], look_back, 1)
+
+# 3. Model LSTM
+model = Sequential()
+model.add(LSTM(50, input_shape=(look_back, 1)))
+model.add(Dense(1))
+model.compile(optimizer="adam", loss="mean_squared_error")
+
+# 4. Training
+st.subheader("Training Model")
+if st.button("Mulai Training"):
+    with st.spinner("Sedang melatih model..."):
+        model.fit(X, y, epochs=20, batch_size=1, verbose=0)
+    st.success("Training selesai!")
+
+    # 5. Prediksi bulan berikutnya
+    last_input = scaled_data[-look_back:].reshape(1, look_back, 1)
+    next_scaled = model.predict(last_input)
+    next_inflation = scaler.inverse_transform(next_scaled)[0, 0]
+    last_real = data["Inflasi"].iloc[-1]
+
+    arah = "meningkat" if next_inflation > last_real else "menurun"
+
+    # 6. Output
+    st.subheader("Prediksi Bulan Berikutnya")
+    st.write(f"Prediksi inflasi bulan depan: **{next_inflation:.2f}%**")
+    st.write(f"Tingkat inflasi diperkirakan akan **{arah}** dibandingkan bulan terakhir (**{last_real:.2f}%**).")
 else:
-    data[date_col] = pd.to_datetime(data[date_col])
-    data = data[[date_col, inflation_col]]
-    data = data.sort_values(by=date_col, ascending=False)  # Sort descending
-    data.set_index(date_col, inplace=True)
-    data.columns = ['Inflation']
-
-    st.subheader("Data Inflasi Bulanan")
-    st.line_chart(data)
-
-    # Prepare data for LSTM
-    scaler = MinMaxScaler(feature_range=(0, 1))
-    inflation_scaled = scaler.fit_transform(data)
-
-    def create_dataset(dataset, look_back=3):
-        X, Y = [], []
-        for i in range(len(dataset) - look_back):
-            X.append(dataset[i:(i + look_back), 0])
-            Y.append(dataset[i + look_back, 0])
-        return np.array(X), np.array(Y)
-
-    look_back = 3
-    X, y = create_dataset(inflation_scaled, look_back)
-
-    # Reshape input to be [samples, time steps, features]
-    X = np.reshape(X, (X.shape[0], X.shape[1], 1))
-
-    # Build LSTM model
-    model = Sequential()
-    model.add(LSTM(50, input_shape=(look_back, 1)))
-    model.add(Dense(1))
-    model.compile(loss='mean_squared_error', optimizer='adam')
-
-    # Train model
-    st.subheader("Training Model LSTM")
-    if st.button("Mulai Training"):
-        with st.spinner('Training model...'):
-            model.fit(X, y, epochs=20, batch_size=1, verbose=0)
-        st.success("Training selesai!")
-
-        # Predict future inflation for next 12 months
-        last_data = inflation_scaled[-look_back:]
-        predictions = []
-        current_input = last_data.reshape(1, look_back, 1)
-        for _ in range(12):
-            pred = model.predict(current_input)[0,0]
-            predictions.append(pred)
-            current_input = np.append(current_input[:,1:,:], [[[pred]]], axis=1)
-
-        predictions = scaler.inverse_transform(np.array(predictions).reshape(-1,1))
-        future_dates = pd.date_range(start=data.index[-1] + pd.offsets.MonthEnd(1) + pd.Timedelta(days=1), periods=12, freq='M')
-        pred_df = pd.DataFrame({'Date': future_dates, 'Predicted Inflation': predictions.flatten()})
-        pred_df.set_index('Date', inplace=True)
-
-        st.subheader("Prediksi Inflasi Bulanan 12 Bulan ke Depan")
-        st.line_chart(pred_df)
-    else:
-        st.info("Klik tombol 'Mulai Training' untuk melatih model dan melihat prediksi.")
+    st.info("Klik tombol 'Mulai Training' untuk melatih model dan melihat prediksi.")
