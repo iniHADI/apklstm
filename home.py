@@ -9,11 +9,11 @@ st.title("Prediksi Inflasi Bulanan Indonesia")
 
 # 1. Load Data
 @st.cache_data
+@st.cache_data
 def load_data():
-    df = pd.read_excel("Data Inflasi (2).xlsx", engine="openpyxl")
-    st.write("📌 Kolom ditemukan:", df.columns.tolist())  # debug output
+    df = pd.read_excel("Data Inflasi (2).xlsx", engine="openpyxl", skiprows=4)
+    st.write("📌 Kolom ditemukan:", df.columns.tolist())
 
-    # Gunakan nama kolom eksplisit dari file
     if "Periode" not in df.columns or "Data Inflasi" not in df.columns:
         st.error("❌ Kolom 'Periode' atau 'Data Inflasi' tidak ditemukan.")
         st.stop()
@@ -21,7 +21,7 @@ def load_data():
     df["Periode"] = pd.to_datetime(df["Periode"])
     df.set_index("Periode", inplace=True)
     df = df[["Data Inflasi"]]
-    df.columns = ["Inflasi"]  # ubah ke nama standar
+    df.columns = ["Inflasi"]
     return df
 
 data = load_data()
