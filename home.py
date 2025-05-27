@@ -22,8 +22,11 @@ def load_data():
 
 data = load_data()
 
-# Display columns to help user verify
-st.write("Kolom data yang dimuat:", data.columns.tolist())
+# Display columns to help user verify only in local/dev environment
+import os
+
+if os.getenv("DEPLOYMENT", "false").lower() != "true":
+    st.write("Kolom data yang dimuat:", data.columns.tolist())
 
 # Directly assign column names as per your data
 date_col = 'Periode'
