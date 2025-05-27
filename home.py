@@ -11,30 +11,22 @@ st.title("Prediksi Inflasi Bulanan Indonesia")
 @st.cache_data
 def load_data():
     df = pd.read_excel("Data Inflasi (2).xlsx", engine="openpyxl")
-    st.write("🔍 Kolom ditemukan:", df.columns.tolist())  # debug info
+    st.write("📌 Kolom ditemukan:", df.columns.tolist())  # debug output
 
-    # Deteksi otomatis kolom tanggal dan inflasi
-    tanggal_col = None
-    inflasi_col = None
-    for col in df.columns:
-        if "tanggal" in col.lower() or "date" in col.lower():
-            tanggal_col = col
-        if "inflasi" in col.lower() or "inflation" in col.lower():
-            inflasi_col = col
-
-    if tanggal_col is None or inflasi_col is None:
-        st.error("❌ Kolom 'Tanggal' atau 'Inflasi' tidak ditemukan.")
+    # Gunakan nama kolom eksplisit dari file
+    if "Periode" not in df.columns or "Data Inflasi" not in df.columns:
+        st.error("❌ Kolom 'Periode' atau 'Data Inflasi' tidak ditemukan.")
         st.stop()
 
-    df[tanggal_col] = pd.to_datetime(df[tanggal_col])
-    df.set_index(tanggal_col, inplace=True)
-    df = df[[inflasi_col]]
-    df.columns = ['Inflasi']  # ubah jadi nama standar
+    df["Periode"] = pd.to_datetime(df["Periode"])
+    df.set_index("Periode", inplace=True)
+    df = df[["Data Inflasi"]]
+    df.columns = ["Inflasi"]  # ubah ke nama standar
     return df
 
 data = load_data()
 
-st.subheader("Data Inflasi (2003–2025)")
+st.subheader("Data Inflasi Bulanan")
 st.line_chart(data)
 
 # 2. Preprocessing
