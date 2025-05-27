@@ -81,7 +81,11 @@ else:
             current_input = np.append(current_input[:,1:,:], [[[pred]]], axis=1)
 
         predictions = scaler.inverse_transform(np.array(predictions).reshape(-1,1))
-        future_dates = pd.date_range(start=data.index[-1] + pd.offsets.MonthEnd(1) + pd.Timedelta(days=1), periods=12, freq='M')
+        # Predict until end of 2025
+        last_date = data.index[-1]
+        end_date = pd.Timestamp(year=2025, month=12, day=31)
+        periods = ((end_date.year - last_date.year) * 12 + (end_date.month - last_date.month))
+        future_dates = pd.date_range(start=last_date + pd.offsets.MonthEnd(1) + pd.Timedelta(days=1), periods=periods, freq='M')
         pred_df = pd.DataFrame({'Date': future_dates, 'Predicted Inflation': predictions.flatten()})
         pred_df.set_index('Date', inplace=True)
 
