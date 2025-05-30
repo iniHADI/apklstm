@@ -1,66 +1,72 @@
 import streamlit as st
-import pandas as pd
 import numpy as np
-from sklearn.preprocessing import MinMaxScaler
+import pandas as pd
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense
+from sklearn.preprocessing import MinMaxScaler
+import matplotlib.pyplot as plt
 
-st.title("Prediksi Inflasi Bulanan Indonesia")
+st.title("Prediksi Inflasi Bulanan di Indonesia dengan LSTM")
 
-# 1. Load Data
+# Load data from Excel
 @st.cache_data
 def load_data():
-    df = pd.read_excel("Data Inflasi (2).xlsx", engine="openpyxl")
-    df["Periode"] = pd.to_datetime(df["Periode"])
-    df.set_index("Periode", inplace=True)
-    df = df[["Data Inflasi"]]  # hanya kolom Data Inflasi
-    df.rename(columns={"Data Inflasi": "Inflasi"}, inplace=True)  # rename for consistency
+    df = pd.read_excel('Data Inflasi.xlsx', engine='openpyxl')
+    df['Tanggal'] = pd.to_datetime(df['Tanggal'])
+    df.set_index('Tanggal', inplace=True)
+    df.rename(columns={'Inflasi': 'Inflation'}, inplace=True)
     return df
 
 data = load_data()
 
-st.subheader("Data Inflasi (2003–2025)")
+st.subheader("Data Inflasi Bulanan")
 st.line_chart(data)
 
-# 2. Preprocessing
-scaler = MinMaxScaler()
-scaled_data = scaler.fit_transform(data)
+# Normalize data
+scaler = MinMaxScaler(feature_range=(0, 1))
+inflation_scaled = scaler.fit_transform(data)
 
+# Prepare dataset for LSTM
 def create_dataset(dataset, look_back=3):
-    X, y = [], []
+    X, Y = [], []
     for i in range(len(dataset) - look_back):
-        X.append(dataset[i:i+look_back, 0])
-        y.append(dataset[i+look_back, 0])
-    return np.array(X), np.array(y)
+        X.append(dataset[i:(i + look_back), 0])
+        Y.append(dataset[i + look_back, 0])
+    return np.array(X), np.array(Y)
 
 look_back = 3
-X, y = create_dataset(scaled_data, look_back)
-X = X.reshape(X.shape[0], look_back, 1)
+X, y = create_dataset(inflation_scaled, look_back)
+X = np.reshape(X, (X.shape[0], X.shape[1], 1))  # reshape to [samples, time steps, features]
 
-# 3. Model LSTM
+# Build model
 model = Sequential()
 model.add(LSTM(50, input_shape=(look_back, 1)))
 model.add(Dense(1))
-model.compile(optimizer="adam", loss="mean_squared_error")
+model.compile(loss='mean_squared_error', optimizer='adam')
 
-# 4. Training
-st.subheader("Training Model")
+st.subheader("Training Model LSTM")
 if st.button("Mulai Training"):
-    with st.spinner("Sedang melatih model..."):
+    with st.spinner("Training model..."):
         model.fit(X, y, epochs=20, batch_size=1, verbose=0)
     st.success("Training selesai!")
 
-    # 5. Prediksi bulan berikutnya
-    last_input = scaled_data[-look_back:].reshape(1, look_back, 1)
-    next_scaled = model.predict(last_input)
-    next_inflation = scaler.inverse_transform(next_scaled)[0, 0]
-    last_real = data["Inflasi"].iloc[-1]
+    # Predict 12 months ahead
+    last_data = inflation_scaled[-look_back:]
+    predictions = []
+    current_input = last_data.reshape(1, look_back, 1)
 
-    arah = "meningkat" if next_inflation > last_real else "menurun"
+    for _ in range(12):
+        pred = model.predict(current_input)[0, 0]
+        predictions.append(pred)
+        current_input = np.append(current_input[:, 1:, :], [[[pred]]], axis=1)
 
-    # 6. Output
-    st.subheader("Prediksi Bulan Berikutnya")
-    st.write(f"Prediksi inflasi bulan depan: **{next_inflation:.2f}%**")
-    st.write(f"Tingkat inflasi diperkirakan akan **{arah}** dibandingkan bulan terakhir (**{last_real:.2f}%**).")
+    predictions = scaler.inverse_transform(np.array(predictions).reshape(-1, 1))
+    future_dates = pd.date_range(start=data.index[-1] + pd.offsets.MonthBegin(), periods=12, freq='M')
+    pred_df = pd.DataFrame({'Tanggal': future_dates, 'Prediksi Inflasi': predictions.flatten()})
+    pred_df.set_index('Tanggal', inplace=True)
+
+    st.subheader("Prediksi Inflasi 12 Bulan ke Depan")
+    st.line_chart(pred_df)
+
 else:
     st.info("Klik tombol 'Mulai Training' untuk melatih model dan melihat prediksi.")
