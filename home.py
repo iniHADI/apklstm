@@ -4,18 +4,16 @@ import pandas as pd
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense
 from sklearn.preprocessing import MinMaxScaler
-import matplotlib.pyplot as plt
 
 st.title("Prediksi Inflasi Bulanan di Indonesia dengan LSTM")
 
 # Load data from Excel
 @st.cache_data
 def load_data():
-    df = pd.read_excel('Data Inflasi.xlsx', engine='openpyxl')
-    df.rename(columns={'Tanggal': 'Periode'}, inplace=True)
+    df = pd.read_excel("Data Inflasi.xlsx", engine="openpyxl")
+    df.rename(columns={'Periode': 'Periode', 'Data Inflasi': 'Inflation'}, inplace=True)
     df['Periode'] = pd.to_datetime(df['Periode'])
     df.set_index('Periode', inplace=True)
-    df.rename(columns={'Inflasi': 'Inflation'}, inplace=True)
     return df
 
 data = load_data()
@@ -23,15 +21,15 @@ data = load_data()
 st.subheader("Data Inflasi Bulanan")
 st.line_chart(data)
 
-# Calculate monthly inflation rate
-data['Inflasi Bulanan (%)'] = data['Inflation'].pct_change() * 100
-
-st.subheader("Laju Inflasi Bulanan (%)")
-st.line_chart(data['Inflasi Bulanan (%)'])
+# Perhitungan inflasi bulanan (jika datanya berupa IHK)
+# Jika 'Inflation' sudah berisi % inflasi bulanan, bagian ini bisa dilewati atau dikomentari
+# data['Inflasi Bulanan (%)'] = data['Inflation'].pct_change() * 100
+# st.subheader("Laju Inflasi Bulanan (%)")
+# st.line_chart(data['Inflasi Bulanan (%)'])
 
 # Normalize data
 scaler = MinMaxScaler(feature_range=(0, 1))
-inflation_scaled = scaler.fit_transform(data[['Inflation']].dropna())
+inflation_scaled = scaler.fit_transform(data[['Inflation']])
 
 # Prepare dataset for LSTM
 def create_dataset(dataset, look_back=3):
@@ -43,7 +41,7 @@ def create_dataset(dataset, look_back=3):
 
 look_back = 3
 X, y = create_dataset(inflation_scaled, look_back)
-X = np.reshape(X, (X.shape[0], X.shape[1], 1))  # reshape to [samples, time steps, features]
+X = np.reshape(X, (X.shape[0], X.shape[1], 1))
 
 # Build model
 model = Sequential()
