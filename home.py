@@ -9,24 +9,17 @@ st.title("Prediksi Inflasi Bulanan Indonesia")
 
 # 1. Load Data
 @st.cache_data
-@st.cache_data
 def load_data():
-    df = pd.read_excel("Data Inflasi (2).xlsx", engine="openpyxl", skiprows=4)
-    st.write("📌 Kolom ditemukan:", df.columns.tolist())
-
-    if "Periode" not in df.columns or "Data Inflasi" not in df.columns:
-        st.error("❌ Kolom 'Periode' atau 'Data Inflasi' tidak ditemukan.")
-        st.stop()
-
+    df = pd.read_excel("Data Inflasi (2).xlsx", engine="openpyxl")
     df["Periode"] = pd.to_datetime(df["Periode"])
     df.set_index("Periode", inplace=True)
-    df = df[["Data Inflasi"]]
-    df.columns = ["Inflasi"]
+    df = df[["Data Inflasi"]]  # hanya kolom Data Inflasi
+    df.rename(columns={"Data Inflasi": "Inflasi"}, inplace=True)  # rename for consistency
     return df
 
 data = load_data()
 
-st.subheader("Data Inflasi Bulanan")
+st.subheader("Data Inflasi (2003–2025)")
 st.line_chart(data)
 
 # 2. Preprocessing
@@ -67,7 +60,7 @@ if st.button("Mulai Training"):
 
     # 6. Output
     st.subheader("Prediksi Bulan Berikutnya")
-    st.write(f"📈 Prediksi inflasi bulan depan: **{next_inflation:.2f}%**")
-    st.write(f"Perkiraan inflasi akan **{arah}** dibanding bulan terakhir (**{last_real:.2f}%**).")
+    st.write(f"Prediksi inflasi bulan depan: **{next_inflation:.2f}%**")
+    st.write(f"Tingkat inflasi diperkirakan akan **{arah}** dibandingkan bulan terakhir (**{last_real:.2f}%**).")
 else:
     st.info("Klik tombol 'Mulai Training' untuk melatih model dan melihat prediksi.")
