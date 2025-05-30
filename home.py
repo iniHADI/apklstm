@@ -12,8 +12,9 @@ st.title("Prediksi Inflasi Bulanan di Indonesia dengan LSTM")
 @st.cache_data
 def load_data():
     df = pd.read_excel('Data Inflasi.xlsx', engine='openpyxl')
-    df['Tanggal'] = pd.to_datetime(df['Tanggal'])
-    df.set_index('Tanggal', inplace=True)
+    df.rename(columns={'Tanggal': 'Periode'}, inplace=True)
+    df['Periode'] = pd.to_datetime(df['Periode'])
+    df.set_index('Periode', inplace=True)
     df.rename(columns={'Inflasi': 'Inflation'}, inplace=True)
     return df
 
@@ -62,8 +63,8 @@ if st.button("Mulai Training"):
 
     predictions = scaler.inverse_transform(np.array(predictions).reshape(-1, 1))
     future_dates = pd.date_range(start=data.index[-1] + pd.offsets.MonthBegin(), periods=12, freq='M')
-    pred_df = pd.DataFrame({'Tanggal': future_dates, 'Prediksi Inflasi': predictions.flatten()})
-    pred_df.set_index('Tanggal', inplace=True)
+    pred_df = pd.DataFrame({'Periode': future_dates, 'Prediksi Inflasi': predictions.flatten()})
+    pred_df.set_index('Periode', inplace=True)
 
     st.subheader("Prediksi Inflasi 12 Bulan ke Depan")
     st.line_chart(pred_df)
