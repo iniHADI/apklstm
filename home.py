@@ -23,9 +23,15 @@ data = load_data()
 st.subheader("Data Inflasi Bulanan")
 st.line_chart(data)
 
+# Calculate monthly inflation rate
+data['Inflasi Bulanan (%)'] = data['Inflation'].pct_change() * 100
+
+st.subheader("Laju Inflasi Bulanan (%)")
+st.line_chart(data['Inflasi Bulanan (%)'])
+
 # Normalize data
 scaler = MinMaxScaler(feature_range=(0, 1))
-inflation_scaled = scaler.fit_transform(data)
+inflation_scaled = scaler.fit_transform(data[['Inflation']].dropna())
 
 # Prepare dataset for LSTM
 def create_dataset(dataset, look_back=3):
