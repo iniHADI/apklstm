@@ -11,7 +11,7 @@ st.title("Prediksi Inflasi Bulanan di Indonesia dengan LSTM")
 # Load data from Excel
 @st.cache_data
 def load_data():
-    df = pd.read_excel('Data Inflasi(2).xlsx', engine='openpyxl')
+    df = pd.read_excel('Data Inflasi (2).xlsx', engine='openpyxl')
     df['Tanggal'] = pd.to_datetime(df['Tanggal'])
     df.set_index('Tanggal', inplace=True)
     df.rename(columns={'Inflasi': 'Inflation'}, inplace=True)
